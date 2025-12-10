@@ -1,78 +1,151 @@
-# Relatório Acadêmico: Implementação e Análise do Algoritmo de Shor
+Relatório Acadêmico: Implementação e Análise do Algoritmo de Shor
 
-**Disciplina:** Computação Quântica  
-**Autores:** Lucas de Luccas, André Hutzler, Diogo Burgierman e [Seu Nome]  
-**Data:** 10 de Dezembro de 2025
+Disciplina: Computação Quântica
+Autores: Lucas de Luccas, André Hutzler, Diogo Burgierman
+Data: 10 de Dezembro de 2025
 
----
+⸻
 
-## 1. Introdução
+1. Introdução
 
-[cite_start]O algoritmo de Shor, proposto em 1994 por Peter Shor, representa um marco na computação quântica ao oferecer uma solução em tempo polinomial para a fatoração de inteiros — um problema considerado intratável para computadores clássicos e base da segurança criptográfica RSA [cite: 5-6].
+O algoritmo de Shor, proposto em 1994 por Peter Shor, é um dos marcos da computação quântica ao demonstrar que a fatoração de inteiros — base da segurança criptográfica RSA — pode ser realizada em tempo polinomial em computadores quânticos universais. Essa capacidade supera significativamente algoritmos clássicos, cuja complexidade permanece sub-exponencial.
 
-Este projeto tem como objetivo conectar a fundamentação teórica (baseada no material de aula `ShorOpt.pdf`) com a implementação prática utilizando o SDK Qiskit. Além da reprodução do caso clássico ($N=15$), este relatório documenta a resolução do **Desafio Prático ($N=21$)**, analisando os resultados probabilísticos obtidos via simulação.
+Este relatório integra a fundamentação teórica apresentada no material ShorOpt.pdf com sua implementação prática no notebook shors_algorithm.ipynb, desenvolvido em Qiskit. Após reproduzir o caso clássico N = 15, o estudo se estende ao desafio prático de fatorar N = 21, analisando o comportamento probabilístico das simulações.
 
-## 2. Metodologia de Integração Teoria-Prática
+⸻
 
-Para garantir a compreensão profunda do algoritmo, adotamos a metodologia de **"Código Anotado"**. O notebook original (`shors_algorithm.ipynb`) foi modificado para incluir docstrings e comentários que referenciam diretamente os slides da aula teórica.
+2. Metodologia de Integração Teoria–Prática
 
-As principais conexões estabelecidas foram:
+A abordagem adotada utilizou código anotado, conectando cada bloco de implementação do notebook a referências diretas dos slides teóricos. Essa estratégia permitiu associar cada elemento do circuito quântico aos fundamentos matemáticos do algoritmo de Shor.
 
-* [cite_start]**Operadores Unitários ($U$):** A construção das portas quânticas no código foi mapeada para a definição do operador $M_a$ nos slides 46-48 [cite: 701-729].
-* [cite_start]**Inicialização:** A preparação do estado $|1\rangle$ no registrador alvo foi justificada pelo "Truque do Autovetor" (Slide 36), que permite criar uma superposição uniforme de todos os autovetores [cite: 554-561].
-* [cite_start]**Estimativa de Fase (QPE):** A construção do circuito com portas Hadamard e QFT Inversa foi alinhada aos diagramas dos slides 30-43 [cite: 472-512, 647-656].
-* [cite_start]**Pós-processamento:** A função de análise clássica foi reescrita para refletir o uso de Frações Contínuas e cálculo de MDC, conforme slides 50-51 [cite: 742-767].
+Principais conexões estabelecidas
 
-## 3. Fundamentação Teórica e Implementação ($N=15$)
+a) Operadores Unitários M_a
+Com base nos slides 46–48, o notebook implementa o operador:
 
-### 3.1. Redução do Problema
-O algoritmo não fatora $N$ diretamente; ele encontra o **período (ordem) $r$** da função modular $f(x) = a^x \pmod N$. [cite_start]Se $r$ for par, os fatores de $N$ podem ser derivados via $MDC(a^{r/2} \pm 1, N)$ [cite: 398-406].
+M_a |x\rangle = |a x \bmod N\rangle,
 
-### 3.2. Otimização de Circuito (Slide 47)
-Para o caso $N=15$ e $a=2$, a teoria prevê a sequência $1 \to 2 \to 4 \to 8 \to 1$ ($r=4$).
-[cite_start]No código, em vez de uma matriz unitária genérica, implementamos os operadores $M_2$ e $M_4$ manualmente utilizando portas **SWAP**, conforme sugerido no Slide 47. Isso reduz drasticamente a profundidade do circuito, mitigando erros em hardware real [cite: 701-710].
+uma permutação unitária essencial para a construção do circuito.
 
-## 4. O Desafio: Fatorando $N=21$
+b) Inicialização — “Truque do Autovetor”
+Os slides 35–36 mostram que o estado |1\rangle pode ser decomposto como combinação linear de autovetores de M_a. Isso justifica sua escolha como entrada para o registrador alvo.
 
-Como extensão da atividade proposta (Slide 64), implementamos o circuito para fatorar **21**, utilizando **$a=2$**.
+c) Estimativa de Fase Quântica (QPE)
+A arquitetura com portas Hadamard, operações controladas e QFT inversa segue o modelo dos slides 30–43, permitindo estimar a fase:
 
-### 4.1. Configuração do Circuito
-Diferente do caso $N=15$, a fatoração de 21 exige mais recursos:
-* **Qubits de Alvo:** 5 (pois $2^4 < 21 < 2^5$).
-* **Qubits de Controle:** 10 (para precisão suficiente na estimativa de fase).
-* **Operadores:** Utilizou-se a construção matricial genérica para as potências de $2 \pmod{21}$.
+\theta = \frac{j}{r},
 
-### 4.2. Análise dos Resultados (Histograma)
+associada aos autovalores de M_a.
 
-A execução no simulador `aer_simulator` gerou a distribuição de probabilidades apresentada abaixo:
+d) Pós-processamento Clássico
+Os slides 50–51 fundamentam a recuperação da ordem r através de frações contínuas, seguida dos cálculos:
 
-![Histograma N=21](image_ebccc0.png)
+\gcd(a^{r/2}-1, N), \quad \gcd(a^{r/2}+1, N),
 
-**Interpretação dos Picos:**
-Observando o histograma, destacam-se picos de contagem que correspondem às fases construtivas da interferência quântica.
+que retornam fatores não triviais de N.
 
-1.  **Leitura do Pico Principal:** O gráfico mostra uma contagem alta para o estado `0010101011` (aprox. decimal 171).
-2.  **Cálculo da Fase:** $\theta = \frac{171}{1024} \approx 0.1669$.
-3.  **Frações Contínuas:** A fração mais próxima é $\frac{1}{6}$.
-4.  **Determinação do Período:** O denominador indica que a ordem é **$r = 6$**.
+⸻
 
-### 4.3. Validação Clássica
-Com $r=6$ (que é par), aplicamos a fórmula de fatoração descrita na teoria:
-1.  Calcular $x = a^{r/2} \pmod N \Rightarrow 2^{6/2} \pmod{21} = 2^3 = 8$.
-2.  Calcular Fatores:
-    * $MDC(8 - 1, 21) = MDC(7, 21) = \mathbf{7}$
-    * $MDC(8 + 1, 21) = MDC(9, 21) = \mathbf{3}$
+3. Fundamentação Teórica e Implementação (N = 15)
 
-**Conclusão do Desafio:** O algoritmo fatorou com sucesso $21 = 7 \times 3$. Observou-se na prática a natureza probabilística do algoritmo, onde alguns picos retornam fatores triviais ou ordens parciais (como $r=2$ ou $r=3$), exigindo filtragem estatística dos resultados para encontrar o período correto ($r=6$).
+3.1. Redução do Problema
 
-## 5. Discussão e Limitações
+O algoritmo não fatora N diretamente; ele determina a ordem r da função:
 
-A implementação confirmou o alinhamento entre a teoria (PDF) e a prática (Notebook). No entanto, ressalta-se as limitações de hardware discutidas no Slide 52:
-* [cite_start]**Ruído:** Em hardware real (como `ibm_marrakesh`), o histograma apresentaria "vazamento" de probabilidade devido à decoerência e erros de porta [cite: 768-782].
-* [cite_start]**Escalabilidade:** Fatorar números RSA reais (2048 bits) exigiria milhões de qubits e correção de erros robusta, algo ainda distante da tecnologia NISQ atual [cite: 800-814].
+f(x) = a^x \bmod N.
 
-## 6. Referências
+Se r é par e atende às condições adequadas, os fatores de N advêm de:
 
-1.  **ShorOpt.pdf** — Material de Aula: Análise Teórica e Implementação em Circuitos Quânticos (Prof. Bryan Kano & Prof. Routo Terada).
-2.  **Notebook** — `shors_algorithm.ipynb` (IBM Quantum / Qiskit Tutorials).
-3.  Shor, P. W. (1994). "Algorithms for quantum computation: discrete logarithms and factoring".
+p = \gcd(a^{r/2} - 1, N), \quad q = \gcd(a^{r/2} + 1, N).
+
+3.2. Otimização do Circuito
+
+Para N = 15 e a = 2, o ciclo modular:
+
+1 → 2 → 4 → 8 → 1
+
+revela período r = 4.
+
+No notebook, operadores como M_2 e M_4 foram implementados via portas SWAP, reduzindo a profundidade do circuito conforme sugerido no slide 47 — prática importante para execução em hardware real.
+
+⸻
+
+4. Desafio Prático: Fatorando N = 21
+
+4.1. Parâmetros do Circuito
+
+Para fatorar 21 com a = 2, utilizamos:
+	•	5 qubits de alvo, pois 2^4 < 21 < 2^5;
+	•	10 qubits de controle, necessários para precisão da QPE;
+	•	Implementação genérica dos operadores M_a^{2^k}, devido à estrutura modular mais complexa.
+
+⸻
+
+4.2. Resultados e Análise do Histograma
+
+A simulação no aer_simulator produziu picos significativos no histograma. O estado mais provável foi:
+
+0010101011
+
+Convertido para decimal:
+
+171
+
+A fase aproximada é:
+
+\theta = \frac{171}{1024} \approx 0.1669.
+
+Frações contínuas fornecem a aproximação:
+
+\theta \approx \frac{1}{6},
+
+indicando que:
+
+r = 6.
+
+
+⸻
+
+4.3. Validação Clássica
+
+Com r = 6:
+
+a^{r/2} = 2^3 = 8.
+
+Assim:
+
+\gcd(8 - 1, 21) = \gcd(7, 21) = 7,  
+\gcd(8 + 1, 21) = \gcd(9, 21) = 3.
+
+Logo:
+
+21 = 3 \times 7.
+
+A análise confirma a eficácia estatística do algoritmo, embora execuções individuais possam produzir r parcial (2 ou 3), reforçando a necessidade de filtragem probabilística.
+
+⸻
+
+5. Discussão e Limitações
+
+A implementação apresentou consistência com os princípios teóricos estudados. Entretanto, limitações práticas permanecem:
+
+Ruído e Decoerência
+
+Execuções em hardware real apresentam dispersão no histograma, ocasionada por ruído de portas e acoplamentos parasitas.
+
+Escalabilidade
+
+Embora funcional em exemplos pequenos, a fatoração de números RSA (2048 bits) exigiria:
+	•	milhões de qubits físicos;
+	•	correção de erros em larga escala;
+	•	profundidade de circuito muito além das capacidades NISQ atuais.
+
+Assim, aplicações reais permanecem distantes, apesar do poder teórico exemplar demonstrado pelo algoritmo.
+
+⸻
+
+6. Referências
+	1.	ShorOpt.pdf — Material de aula: Algoritmo de Shor e Implementação em Circuitos Quânticos (Prof. Bryan Kano & Prof. Routo Terada).
+	2.	Notebook: shors_algorithm.ipynb — Implementação prática em Qiskit.
+	3.	Shor, P. W. (1994). Algorithms for quantum computation: discrete logarithms and factoring. Proceedings of the 35th Annual Symposium on Foundations of Computer Science.
+
